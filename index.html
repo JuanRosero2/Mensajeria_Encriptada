@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatLab - Seguridad de Redes</title>
+    <!-- Modern Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #0f172a; /* Slate 900 */
+            --panel-bg: rgba(30, 41, 59, 0.7); /* Slate 800 with opacity */
+            --panel-border: rgba(255, 255, 255, 0.1);
+            --primary: #3b82f6; /* Blue 500 */
+            --primary-hover: #2563eb; /* Blue 600 */
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            
+            /* Status colors */
+            --status-secure: #10b981; /* Emerald 500 */
+            --status-insecure: #ef4444; /* Red 500 */
+            --status-disconnected: #f59e0b; /* Amber 500 */
+            
+            --glass-blur: blur(12px);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-color), #000000);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* Decorative background blobs */
+        .blob {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.4;
+            z-index: -1;
+        }
+        .blob-1 { top: -100px; left: -100px; width: 400px; height: 400px; background: #3b82f6; }
+        .blob-2 { bottom: -100px; right: -100px; width: 300px; height: 300px; background: #8b5cf6; }
+
+        .app-container {
+            width: 90%;
+            max-width: 900px;
+            height: 85vh;
+            background: var(--panel-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--panel-border);
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 10;
+        }
+
+        /* Header */
+        header {
+            padding: 20px 30px;
+            border-bottom: 1px solid var(--panel-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(15, 23, 42, 0.6);
+        }
+
+        .logo h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .logo i { color: var(--primary); }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        /* Toggle Switch */
+        .mode-selector {
+            display: flex;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 30px;
+            padding: 4px;
+            position: relative;
+        }
+        
+        .mode-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 1;
+        }
+
+        .mode-btn.active {
+            color: #fff;
+        }
+
+        /* The sliding background for the toggle */
+        .mode-slider {
+            position: absolute;
+            top: 4px;
+            bottom: 4px;
+            width: calc(50% - 4px);
+            background: var(--primary);
+            border-radius: 20px;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 0;
+        }
+
+        .mode-slider.encrypted {
+            transform: translateX(100%);
+            background: var(--status-secure);
+        }
+        .mode-slider.unencrypted {
+            transform: translateX(0);
+            background: var(--status-insecure);
+        }
+
+        .status-indicator {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--status-disconnected);
+            box-shadow: 0 0 10px var(--status-disconnected);
+            transition: all 0.3s ease;
+        }
+
+        /* Chat Area */
+        .chat-area {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            scroll-behavior: smooth;
+        }
+
+        /* Scrollbar styling */
+        .chat-area::-webkit-scrollbar { width: 6px; }
+        .chat-area::-webkit-scrollbar-track { background: transparent; }
+        .chat-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 10px; }
+
+        .message {
+            max-width: 70%;
+            padding: 12px 18px;
+            border-radius: 18px;
+            animation: fadeIn 0.3s ease forwards;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Alice (Local User) */
+        .msg-local {
+            align-self: flex-end;
+            background: var(--primary);
+            color: #fff;
+            border-bottom-right-radius: 4px;
+        }
+
+        /* Bob (Remote/Received) */
+        .msg-remote {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+            border-bottom-left-radius: 4px;
+        }
+
+        .msg-meta {
+            display: block;
+            font-size: 0.7rem;
+            opacity: 0.7;
+            margin-top: 5px;
+            text-align: right;
+        }
+
+        .msg-remote .msg-meta {
+            text-align: left;
+        }
+        
+        .security-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        .badge-secure { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .badge-insecure { background: rgba(239, 68, 68, 0.2); color: #f87171; }
+
+        /* Input Area */
+        .input-area {
+            padding: 20px 30px;
+            background: rgba(0, 0, 0, 0.2);
+            border-top: 1px solid var(--panel-border);
+        }
+
+        .input-form {
+            display: flex;
+            gap: 15px;
+        }
+
+        .input-form input {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 15px 20px;
+            border-radius: 30px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s ease;
+        }
+
+        .input-form input:focus {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .input-form button {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(59, 130, 246, 0.4);
+        }
+
+        .input-form button:hover {
+            background: var(--primary-hover);
+            transform: scale(1.05);
+        }
+        
+        .input-form button:active {
+            transform: scale(0.95);
+        }
+
+        /* Certificate Alert */
+        .cert-alert {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(245, 158, 11, 0.9);
+            color: #fff;
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 0.9rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+            max-width: 90%;
+        }
+        .cert-alert.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+    </style>
+</head>
+<body>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="cert-alert" id="certAlert">
+        <i class="fas fa-exclamation-triangle"></i>
+        <span><strong>Aviso importante:</strong> Para que el Web Socket seguro (wss://) funcione con certificados autofirmados, primero debes visitar <a href="https://127.0.0.1:8443" target="_blank" style="color:white; text-decoration: underline;">https://127.0.0.1:8443</a> en tu navegador y aceptar la advertencia de seguridad.</span>
+        <button onclick="document.getElementById('certAlert').classList.remove('show')" style="background:none;border:none;color:#fff;cursor:pointer;margin-left:10px;"><i class="fas fa-times"></i></button>
+    </div>
+
+    <div class="app-container">
+        <header>
+            <div class="logo">
+                <h1><i class="fas fa-shield-halved"></i> ChatLab</h1>
+            </div>
+            
+            <div class="controls">
+                <div class="mode-selector">
+                    <div class="mode-slider unencrypted" id="modeSlider"></div>
+                    <button class="mode-btn active" id="btnUnencrypted" onclick="setMode('unencrypted')">
+                        <i class="fas fa-unlock"></i> Unencrypted (ws://)
+                    </button>
+                    <button class="mode-btn" id="btnEncrypted" onclick="setMode('encrypted')">
+                        <i class="fas fa-lock"></i> Encrypted (wss://)
+                    </button>
+                </div>
+
+                <div class="status-indicator">
+                    <div class="status-dot" id="statusDot"></div>
+                    <span id="statusText">Desconectado</span>
+                </div>
+            </div>
+        </header>
+
+        <div class="chat-area" id="chatArea">
+            <div style="text-align: center; color: var(--text-muted); font-size: 0.95rem; margin-top: auto; margin-bottom: auto;" id="emptyState">
+                <i class="fas fa-network-wired" style="font-size: 3rem; margin-bottom: 15px; opacity: 0.5;"></i>
+                <p>Selecciona un modo de conexión y envía un mensaje para comenzar.</p>
+                <p style="margin-top: 10px; opacity: 0.7; font-size: 0.85rem;">Prepara Wireshark escuchando en tu interfaz Loopback (lo0 / Adapter for loopback).</p>
+            </div>
+        </div>
+
+        <div class="input-area">
+            <form class="input-form" id="chatForm">
+                <input type="text" id="messageInput" placeholder="Escribe tu mensaje aquí..." autocomplete="off" required>
+                <button type="submit"><i class="fas fa-paper-plane"></i></button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const chatArea = document.getElementById('chatArea');
+        const chatForm = document.getElementById('chatForm');
+        const messageInput = document.getElementById('messageInput');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const modeSlider = document.getElementById('modeSlider');
+        const btnUnencrypted = document.getElementById('btnUnencrypted');
+        const btnEncrypted = document.getElementById('btnEncrypted');
+        const emptyState = document.getElementById('emptyState');
+        const certAlert = document.getElementById('certAlert');
+
+        let ws = null;
+        let currentMode = 'unencrypted'; // 'unencrypted' | 'encrypted'
+        let connectionIntent = false;
+
+        // Configuration
+        const HOST = '127.0.0.1';
+        const WS_UNENCRYPTED_URL = `ws://${HOST}:8000/ws/unencrypted`;
+        const WS_ENCRYPTED_URL = `wss://${HOST}:8443/ws/encrypted`;
+
+        function setMode(mode) {
+            if (currentMode === mode) return;
+            
+            currentMode = mode;
+            
+            // Update UI
+            if (mode === 'encrypted') {
+                modeSlider.classList.remove('unencrypted');
+                modeSlider.classList.add('encrypted');
+                btnEncrypted.classList.add('active');
+                btnUnencrypted.classList.remove('active');
+                
+                // Show TLS warning alert since it's self signed
+                certAlert.classList.add('show');
+                setTimeout(() => certAlert.classList.remove('show'), 12000);
+            } else {
+                modeSlider.classList.remove('encrypted');
+                modeSlider.classList.add('unencrypted');
+                btnUnencrypted.classList.add('active');
+                btnEncrypted.classList.remove('active');
+                certAlert.classList.remove('show');
+            }
+
+            // Reconnect WebSockets
+            connect();
+        }
+
+        function connect() {
+            if (ws) {
+                ws.close();
+            }
+
+            const url = currentMode === 'encrypted' ? WS_ENCRYPTED_URL : WS_UNENCRYPTED_URL;
+            
+            updateStatus('connecting');
+            connectionIntent = true;
+            
+            try {
+                ws = new WebSocket(url);
+                
+                ws.onopen = () => {
+                    updateStatus('connected');
+                };
+
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        appendMessage(data.text, 'remote', data.mode);
+                    } catch(e) {
+                        appendMessage(event.data, 'remote', currentMode.toUpperCase());
+                    }
+                };
+
+                ws.onclose = (event) => {
+                    if (connectionIntent) {
+                        updateStatus('disconnected');
+                        // If it fails immediately on wss, usually a cert issue.
+                        if (currentMode === 'encrypted' && event.code === 1006) {
+                            certAlert.classList.add('show');
+                        }
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    console.error("WebSocket Error:", error);
+                    updateStatus('error');
+                };
+            } catch (error) {
+                console.error("Connection Error:", error);
+                updateStatus('error');
+            }
+        }
+
+        function updateStatus(state) {
+            switch(state) {
+                case 'connected':
+                    statusText.textContent = currentMode === 'encrypted' ? 'Seguro (wss://)' : 'Inseguro (ws://)';
+                    const color = currentMode === 'encrypted' ? 'var(--status-secure)' : 'var(--status-insecure)';
+                    statusDot.style.background = color;
+                    statusDot.style.boxShadow = `0 0 10px ${color}`;
+                    break;
+                case 'connecting':
+                    statusText.textContent = 'Conectando...';
+                    statusDot.style.background = 'var(--status-disconnected)';
+                    statusDot.style.boxShadow = `0 0 10px var(--status-disconnected)`;
+                    break;
+                case 'disconnected':
+                case 'error':
+                    statusText.textContent = state === 'error' ? 'Error (Verifica Certificados)' : 'Desconectado';
+                    statusDot.style.background = 'var(--status-disconnected)';
+                    statusDot.style.boxShadow = `none`;
+                    break;
+            }
+        }
+
+        function appendMessage(text, type, mode = null) {
+            if (emptyState) emptyState.style.display = 'none';
+
+            const msgDiv = document.createElement('div');
+            msgDiv.classList.add('message');
+            msgDiv.classList.add(type === 'local' ? 'msg-local' : 'msg-remote');
+
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            
+            let securityBadgeHTML = '';
+            if (type === 'remote' && mode) {
+                if (mode === 'ENCRYPTED') {
+                    securityBadgeHTML = `<div class="security-badge badge-secure"><i class="fas fa-lock"></i> TLS Cifrado</div><br>`;
+                } else {
+                    securityBadgeHTML = `<div class="security-badge badge-insecure"><i class="fas fa-unlock"></i> Texto Plano</div><br>`;
+                }
+            }
+
+            const senderName = type === 'local' ? 'Alice (Tú)' : 'Bob (Servidor Echo)';
+
+            msgDiv.innerHTML = `
+                ${securityBadgeHTML}
+                ${text}
+                <span class="msg-meta">${senderName} - ${time}</span>
+            `;
+
+            chatArea.appendChild(msgDiv);
+            chatArea.scrollTop = chatArea.scrollHeight;
+        }
+
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const text = messageInput.value.trim();
+            if (!text) return;
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(text);
+                appendMessage(text, 'local');
+                messageInput.value = '';
+            } else {
+                alert("No hay conexión activa con el servidor. Verifica el estado de la conexión en la parte superior derecha.");
+            }
+        });
+
+        // Initialize connection on load
+        window.addEventListener('load', () => {
+            connect();
+        });
+    </script>
+</body>
+</html>
