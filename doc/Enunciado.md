@@ -1,4 +1,3 @@
-
 # Actividad de Ciberseguridad: Chat cifrado vs. no cifrado
 
 ## 1. Objetivo
@@ -426,3 +425,5 @@ La parte más importante de la actividad es conectar:
 **Código → Comunicación → Tráfico de red → Wireshark → Seguridad**
 
 El uso de frameworks, lenguajes o tecnologías diferentes no será penalizado siempre que permitan demostrar claramente los conceptos solicitados.
+
+ a
